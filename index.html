@@ -240,7 +240,7 @@
             const now = new Date();
             const hour = now.getHours();
             const minute = now.getMinutes();
-            return hour > 21 || (hour === 21 && minute >= 10);
+            return hour > 23 || (hour === 23 && minute >= 59);
         }
 
         // 事件监听
@@ -261,14 +261,14 @@
 
         // 复制进票
         copyInButton.addEventListener('click', () => {
-            const link = isAfter2110() ? '' : '\n   票👇\nhttps://wxf-hub.github.io/030666/';
+            const link = isAfter2110() ? '' : '\n   票👇\nhttps://wxf-hub.github.io/zhouyi/';
             const text = `${currentIndex + 1}号 进  ${getCurrentTime()}占用${currentIndex + 1}🈲${link}`;
             copyToClipboard(text);
         });
 
         // 复制出票
         copyOutButton.addEventListener('click', () => {
-            const link = isAfter2110() ? '' : '\n   票👇\nhttps://wxf-hub.github.io/030666/';
+            const link = isAfter2110() ? '' : '\n   票👇\nhttps://wxf-hub.github.io/zhouyi/';
             const text = `${currentIndex + 1}号 出  ${getCurrentTime()}释放${currentIndex + 1}✅${link}`;
             copyToClipboard(text);
         });
