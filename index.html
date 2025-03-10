@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GVB.nl</title>
+    <style>
+        /* 原有CSS样式保持不变 */
+        body {
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            background-image: url('beijing.png');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .image-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 2;
+        }
+
+        .image-container img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            position: absolute;
+            top: 0;
+            left: 0;
+            opacity: 0;
+            transform: translateY(100%);
+            transition: opacity 0.5s ease-in-out, transform 0.5s ease-in-out;
+        }
+
+        .image-container img.active {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .image-container img.left {
+            opacity: 1;
+            transform: translateX(-100%);
+        }
+
+        .image-container img.right {
+            opacity: 1;
+            transform: translateX(100%);
+        }
+
+        .show-button {
+            position: absolute;
+            top: 38%;
+            left: 82%;
+            transform: translate(-50%, -50%);
+            width: 70px;
+            height: 70px;
+            background-color: rgba(255, 255, 255, 0.05);
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+            z-index: 3;
+        }
+
+        .exit-button {
+            position: absolute;
+            bottom: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 50px;
+            height: 50px;
+            background-color: rgba(255, 255, 255, 0.1);
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+            z-index: 3;
+            display: none;
+        }
+
+        .number-container {
+            position: absolute;
+            top: 10px;
+            left: 15px;
+            color: rgba(255, 255, 255, 0.3);
+            font-size: 24px;
+            z-index: 3;
+        }
+
+        /* 调整按钮和文字的透明度 */
+        .copy-button {
+            position: absolute;
+            bottom: 10px;
+            width: 100px;
+            height: 40px;
+            background-color: rgba(255, 255, 255, 0.5); /* 按钮背景透明度 */
+            border: none;
+            border-radius: 5px;
+            color: rgba(255, 255, 255, 0.5); /* 文字透明度 */
+            font-size: 14px;
+            cursor: pointer;
+            z-index: 3;
+            display: none;
+            opacity: 0.5; /* 整体透明度 */
+        }
+
+        .copy-button.left {
+            left: 10px;
+        }
+
+        .copy-button.right {
+            right: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="image-container" id="image-container"></div>
+    <button class="show-button" id="show-button"></button>
+    <button class="exit-button" id="exit-button"></button>
+    <div class="number-container" id="number-container"></div>
+    <!-- 新增的两个复制按钮 -->
+    <button class="copy-button left" id="copy-in-button">复制进票</button>
+    <button class="copy-button right" id="copy-out-button">复制出票</button>
+
+    <script>
+        const imageContainer = document.getElementById('image-container');
+        const showButton = document.getElementById('show-button');
+        const exitButton = document.getElementById('exit-button');
+        const numberContainer = document.getElementById('number-container');
+        const copyInButton = document.getElementById('copy-in-button');
+        const copyOutButton = document.getElementById('copy-out-button');
+
+        // 支持的图片扩展名类型
+        const extensions = ['jpg', 'jpeg', 'png', 'gif'];
+        let currentIndex = 0;
+        let touchStartX = 0;
+        let touchEndX = 0;
+
+        // 初始化时自动加载图片
+        (async function init() {
+            await loadImages();
+        })();
+
+        // 动态加载图片（支持多扩展名）
+        async function loadImages() {
+            for (let i = 1; i <= 10; i++) {
+                const img = await findValidImage(i);
+                if (img) imageContainer.appendChild(img);
+            }
+        }
+
+        // 查找有效图片
+        function findValidImage(number) {
+            return new Promise(resolve => {
+                let extIndex = 0;
+                
+                const tryLoad = () => {
+                    if (extIndex >= extensions.length) {
+                        console.warn(`未找到 ${number} 号图片`);
+                        resolve(null);
+                        return;
+                    }
+
+                    const ext = extensions[extIndex++];
+                    const img = new Image();
+                    img.src = `${number}.${ext}`;
+                    img.alt = `Image ${number}`;
+                    
+                    img.onload = () => {
+                        console.log(`成功加载: ${img.src}`);
+                        resolve(img);
+                    };
+                    
+                    img.onerror = tryLoad;
+                };
+
+                tryLoad();
+            });
+        }
+
+        // 显示当前图片
+        function showImage(index) {
+            const images = imageContainer.querySelectorAll('img');
+            images.forEach((img, i) => {
+                img.classList.toggle('active', i === index);
+                img.classList.remove('left', 'right');
+            });
+            exitButton.style.display = 'block';
+            copyInButton.style.display = 'block';
+            copyOutButton.style.display = 'block';
+            numberContainer.textContent = index + 1;
+        }
+
+        // 图片切换逻辑
+        function prevImage() {
+            const images = imageContainer.querySelectorAll('img');
+            images[currentIndex].classList.add('left');
+            currentIndex = (currentIndex - 1 + images.length) % images.length;
+            images[currentIndex].classList.add('active');
+            showImage(currentIndex);
+        }
+
+        function nextImage() {
+            const images = imageContainer.querySelectorAll('img');
+            images[currentIndex].classList.add('right');
+            currentIndex = (currentIndex + 1) % images.length;
+            images[currentIndex].classList.add('active');
+            showImage(currentIndex);
+        }
+
+        // 复制文本到剪贴板
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text).then(() => {
+                console.log('复制成功:', text);
+            }).catch(err => {
+                console.error('复制失败:', err);
+            });
+        }
+
+        // 获取当前时间（仅显示时间）
+        function getCurrentTime() {
+            const now = new Date();
+            return now.toLocaleTimeString(); // 只返回时间部分
+        }
+
+        // 检查时间是否在 21:10 之后
+        function isAfter2110() {
+            const now = new Date();
+            const hour = now.getHours();
+            const minute = now.getMinutes();
+            return hour > 21 || (hour === 21 && minute >= 10);
+        }
+
+        // 事件监听
+        showButton.addEventListener('click', () => {
+            currentIndex = 0;
+            showImage(currentIndex);
+        });
+
+        exitButton.addEventListener('click', () => {
+            imageContainer.querySelectorAll('img').forEach(img => {
+                img.classList.remove('active', 'left', 'right');
+            });
+            exitButton.style.display = 'none';
+            copyInButton.style.display = 'none';
+            copyOutButton.style.display = 'none';
+            numberContainer.textContent = '';
+        });
+
+        // 复制进票
+        copyInButton.addEventListener('click', () => {
+            const link = isAfter2110() ? '' : '\n   票👇\nhttps://wxf-hub.github.io/030666/';
+            const text = `${currentIndex + 1}号 进  ${getCurrentTime()}占用${currentIndex + 1}🈲${link}`;
+            copyToClipboard(text);
+        });
+
+        // 复制出票
+        copyOutButton.addEventListener('click', () => {
+            const link = isAfter2110() ? '' : '\n   票👇\nhttps://wxf-hub.github.io/030666/';
+            const text = `${currentIndex + 1}号 出  ${getCurrentTime()}释放${currentIndex + 1}✅${link}`;
+            copyToClipboard(text);
+        });
+
+        // 滑动处理
+        imageContainer.addEventListener('touchstart', e => {
+            touchStartX = e.touches[0].clientX;
+        });
+
+        imageContainer.addEventListener('touchend', e => {
+            touchEndX = e.changedTouches[0].clientX;
+            const delta = touchEndX - touchStartX;
+            Math.abs(delta) > 50 && (delta > 0 ? prevImage() : nextImage());
+        });
+    </script>
+</body>
+</html>
